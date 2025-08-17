@@ -130,24 +130,50 @@ jobs:
         draft: false
         prerelease: false
 
-    - name: Find release assets
-      id: asset_paths
-      run: |
-        find artifacts -type f > asset_paths.txt
-        echo "ASSET_PATHS<<EOF" >> $GITHUB_OUTPUT
-        cat asset_paths.txt >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
-
     - name: Upload Release Assets
       uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ${{ matrix.asset_path }}
-        asset_name: ${{ matrix.asset_name }}
-        asset_content_type: application/octet-stream
-      strategy:
-        matrix:
-          include:
-            ${{ fromJson(steps.asset_paths.outputs.ASSET_PATHS || '[]') | map(asset_path => {'asset_path': asset_path, 'asset_name': asset_path.split('/').slice(-1)[0]}) }}
+        asset_path: artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz
+        asset_name: dnsbench-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz
+        asset_content_type: application/gzip
+
+    - name: Upload Release Asset (Linux ARM64)
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-linux-arm64.tar.gz
+        asset_name: dnsbench-${{ steps.version.outputs.VERSION }}-linux-arm64.tar.gz
+        asset_content_type: application/gzip
+
+    - name: Upload Release Asset (macOS AMD64)
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-darwin-amd64.tar.gz
+        asset_name: dnsbench-${{ steps.version.outputs.VERSION }}-darwin-amd64.tar.gz
+        asset_content_type: application/gzip
+
+    - name: Upload Release Asset (macOS ARM64)
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-darwin-arm64.tar.gz
+        asset_name: dnsbench-${{ steps.version.outputs.VERSION }}-darwin-arm64.tar.gz
+        asset_content_type: application/gzip
+
+    - name: Upload Release Asset (Windows AMD64)
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-windows-amd64.zip
+        asset_name: dnsbench-${{ steps.version.outputs.VERSION }}-windows-amd64.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Asset (Windows ARM64)
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-windows-arm64.zip
+        asset_name: dnsbench-${{ steps.version.outputs.VERSION }}-windows-arm64.zip
+        asset_content_type: application/zip
