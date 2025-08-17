@@ -158,4 +158,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Built with Go's standard library
 - Inspired by the need for simple, effective DNS benchmarking tools
-
