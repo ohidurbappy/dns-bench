@@ -85,14 +85,12 @@ jobs:
         path: artifacts
         merge-multiple: true   # ✅ Flatten all artifacts into one folder
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    - name: Release with gh-release
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ github.ref }}
-        release_name: DNS Bench ${{ steps.version.outputs.VERSION }}
+        name: DNS Bench ${{ steps.version.outputs.VERSION }}
         body: |
           ## DNS Bench ${{ steps.version.outputs.VERSION }}
           
@@ -130,51 +128,10 @@ jobs:
           **Full Changelog**: https://github.com/ohidurbappy/dns-bench/compare/v1.0.0...${{ steps.version.outputs.VERSION }}
         draft: false
         prerelease: false
-
-    - name: Upload Release Asset (Linux AMD64)
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz
-        asset_name: dnsbench-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload Release Asset (Linux ARM64)
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-linux-arm64.tar.gz
-        asset_name: dnsbench-${{ steps.version.outputs.VERSION }}-linux-arm64.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload Release Asset (macOS AMD64)
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-darwin-amd64.tar.gz
-        asset_name: dnsbench-${{ steps.version.outputs.VERSION }}-darwin-amd64.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload Release Asset (macOS ARM64)
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-darwin-arm64.tar.gz
-        asset_name: dnsbench-${{ steps.version.outputs.VERSION }}-darwin-arm64.tar.gz
-        asset_content_type: application/gzip
-
-    - name: Upload Release Asset (Windows AMD64)
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-windows-amd64.zip
-        asset_name: dnsbench-${{ steps.version.outputs.VERSION }}-windows-amd64.zip
-        asset_content_type: application/zip
-
-    - name: Upload Release Asset (Windows ARM64)
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-windows-arm64.zip
-        asset_name: dnsbench-${{ steps.version.outputs.VERSION }}-windows-arm64.zip
-        asset_content_type: application/zip
+        files: |
+          artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz
+          artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-linux-arm64.tar.gz
+          artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-darwin-amd64.tar.gz
+          artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-darwin-arm64.tar.gz
+          artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-windows-amd64.zip
+          artifacts/dnsbench-${{ steps.version.outputs.VERSION }}-windows-arm64.zip
