@@ -1,0 +1,148 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            suffix: ""
+          - goos: linux
+            goarch: arm64
+            suffix: ""
+          - goos: darwin
+            goarch: amd64
+            suffix: ""
+          - goos: darwin
+            goarch: arm64
+            suffix: ""
+          - goos: windows
+            goarch: amd64
+            suffix: ".exe"
+          - goos: windows
+            goarch: arm64
+            suffix: ".exe"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Get version
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Build
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 0
+      run: |
+        BINARY_NAME="dnsbench-${{ steps.version.outputs.VERSION }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}"
+        go build -ldflags="-s -w" -o "${BINARY_NAME}" main.go
+        
+        # Create archive
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          zip "${BINARY_NAME%.exe}.zip" "${BINARY_NAME}" README.md
+          echo "ASSET=${BINARY_NAME%.exe}.zip" >> $GITHUB_ENV
+        else
+          tar -czf "${BINARY_NAME}.tar.gz" "${BINARY_NAME}" README.md
+          echo "ASSET=${BINARY_NAME}.tar.gz" >> $GITHUB_ENV
+        fi
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ env.ASSET }}
+        path: ${{ env.ASSET }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Get version
+      id: version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: DNS Bench ${{ steps.version.outputs.VERSION }}
+        body: |
+          ## DNS Bench ${{ steps.version.outputs.VERSION }}
+          
+          A fast and flexible DNS resolver benchmarking tool written in Go.
+          
+          ### Downloads
+          
+          Choose the appropriate binary for your platform:
+          
+          - **Linux AMD64**: `dnsbench-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz`
+          - **Linux ARM64**: `dnsbench-${{ steps.version.outputs.VERSION }}-linux-arm64.tar.gz`
+          - **macOS AMD64**: `dnsbench-${{ steps.version.outputs.VERSION }}-darwin-amd64.tar.gz`
+          - **macOS ARM64** (Apple Silicon): `dnsbench-${{ steps.version.outputs.VERSION }}-darwin-arm64.tar.gz`
+          - **Windows AMD64**: `dnsbench-${{ steps.version.outputs.VERSION }}-windows-amd64.zip`
+          - **Windows ARM64**: `dnsbench-${{ steps.version.outputs.VERSION }}-windows-arm64.zip`
+          
+          ### Usage
+          
+          ```bash
+          # Extract the archive
+          tar -xzf dnsbench-${{ steps.version.outputs.VERSION }}-linux-amd64.tar.gz  # Linux/macOS
+          # or
+          unzip dnsbench-${{ steps.version.outputs.VERSION }}-windows-amd64.zip     # Windows
+          
+          # Run the tool
+          ./dnsbench-${{ steps.version.outputs.VERSION }}-linux-amd64 -domain example.com
+          ```
+          
+          ### What's Changed
+          
+          - Performance improvements and bug fixes
+          - Cross-platform compatibility
+          - Enhanced error reporting
+          
+          **Full Changelog**: https://github.com/ohidurbappy/dns-bench/compare/v1.0.0...${{ steps.version.outputs.VERSION }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Assets
+      run: |
+        for file in artifacts/*/; do
+          asset_name=$(basename "$file")
+          asset_path="$file$asset_name"
+          echo "Uploading $asset_path as $asset_name"
+          
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/octet-stream" \
+            "${{ steps.create_release.outputs.upload_url }}?name=$asset_name" \
+            --data-binary "@$asset_path"
+        done
