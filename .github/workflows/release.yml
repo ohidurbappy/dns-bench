@@ -83,6 +83,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         path: artifacts
+        merge-multiple: true   # ✅ Flatten all artifacts into one folder
 
     - name: Create Release
       id: create_release
@@ -130,7 +131,7 @@ jobs:
         draft: false
         prerelease: false
 
-    - name: Upload Release Assets
+    - name: Upload Release Asset (Linux AMD64)
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
